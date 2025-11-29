@@ -1,0 +1,5 @@
+# Environment file (do not commit)
+.env
+
+# Docker volumes
+postgres_data/
