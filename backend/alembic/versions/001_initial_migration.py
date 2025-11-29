@@ -16,6 +16,9 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
+# Define a constant for 'now()'
+NOW_FUNC = sa.text('now()')
+
 
 def upgrade() -> None:
     # Create issues table
@@ -35,8 +38,8 @@ def upgrade() -> None:
         ), nullable=False),
         sa.Column('pr_url', sa.String(500), nullable=True),
         sa.Column('pr_branch', sa.String(255), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=NOW_FUNC, nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=NOW_FUNC, nullable=False),
     )
     
     # Create indexes for issues table
@@ -55,7 +58,7 @@ def upgrade() -> None:
         ), nullable=False),
         sa.Column('message', sa.Text(), nullable=False),
         sa.Column('event_metadata', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=NOW_FUNC, nullable=False),
         sa.ForeignKeyConstraint(['issue_id'], ['issues.id'], ondelete='CASCADE'),
     )
     
