@@ -3,6 +3,7 @@ Application configuration using Pydantic settings.
 All settings are loaded from environment variables.
 """
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from os import getenv
 
 
 class Settings(BaseSettings):
@@ -16,7 +17,7 @@ class Settings(BaseSettings):
     )
     
     # Database
-    database_url: str = "postgresql://postgres:postgres@localhost:5432/sonarqube_codex"
+    database_url: str = getenv("DATABASE_URL", "postgresql://localhost:5432/sonarqube_codex")
     
     # SonarQube
     sonarqube_url: str
