@@ -72,18 +72,18 @@ class FixerService:
                 event = Event(
                     issue_id=issue.id,
                     event_type=EventType.ISSUE_DETECTED,
-                    message=f"Issue detected by SonarQube: {issue_data.get('message', '')}",
+                    message="Issue detected by SonarQube: {}".format(issue_data.get('message', '')),
                 )
                 db.add(event)
                 
                 new_count += 1
             
             db.commit()
-            logger.info(f"Synced {new_count} new issues from SonarQube")
+            logger.info("Synced {} new issues from SonarQube".format(new_count))
             return new_count
             
         except Exception as e:
-            logger.error(f"Error syncing SonarQube issues: {e}")
+            logger.error("Error syncing SonarQube issues: {}".format(e))
             db.rollback()
             raise
     
@@ -98,7 +98,7 @@ class FixerService:
         Returns:
             Dict with success status and message
         """
-        logger.info(f"Attempting to fix issue {issue_id}...")
+        logger.info("Attempting to fix issue {}...".format(issue_id))
         
         try:
             # Get the issue
@@ -110,7 +110,7 @@ class FixerService:
             if issue.status not in [IssueStatus.NEW]:
                 return {
                     "success": False,
-                    "message": f"Issue already in status {issue.status}",
+                    "message": "Issue already in status {}".format(issue.status),
                 }
             
             # Update status to FIXING
@@ -118,16 +118,16 @@ class FixerService:
             db.add(Event(
                 issue_id=issue.id,
                 event_type=EventType.STATUS_UPDATED,
-                message=f"Status changed to FIXING",
+                message="Status changed to FIXING",
             ))
             db.commit()
             
             # Step 1: Fetch file content from GitHub
-            logger.info(f"Fetching file content for {issue.component}...")
+            logger.info("Fetching file content for {}...".format(issue.component))
             try:
                 file_content, file_sha = github_client.get_file_content(issue.component)
             except Exception as e:
-                error_msg = f"Failed to fetch file from GitHub: {str(e)}"
+                error_msg = "Failed to fetch file from GitHub: {}".format(str(e))
                 logger.error(error_msg)
                 issue.status = IssueStatus.NEW
                 db.add(Event(
@@ -157,7 +157,7 @@ class FixerService:
             )
             
             if not ai_result.get("success"):
-                error_msg = f"AI failed to generate fix: {ai_result.get('explanation')}"
+                error_msg = "AI failed to generate fix: {}".format(ai_result.get('explanation'))
                 logger.error(error_msg)
                 issue.status = IssueStatus.NEW
                 db.add(Event(
@@ -172,14 +172,14 @@ class FixerService:
             explanation = ai_result.get("explanation", "")
             
             # Step 3: Create branch and commit fix
-            branch_name = f"ai-fix/{issue.sonarqube_issue_key}"
-            logger.info(f"Creating branch {branch_name}...")
+            branch_name = "ai-fix/{}".format(issue.sonarqube_issue_key)
+            logger.info("Creating branch {}...".format(branch_name))
             
             try:
                 github_client.create_branch(branch_name)
                 
                 # Update file
-                commit_message = f"Fix SonarQube issue {issue.sonarqube_issue_key}\n\n{explanation}"
+                commit_message = "Fix SonarQube issue {}\n\n{}".format(issue.sonarqube_issue_key, explanation)
                 github_client.update_file(
                     file_path=issue.component,
                     content=fixed_content,
@@ -189,7 +189,7 @@ class FixerService:
                 )
                 
             except Exception as e:
-                error_msg = f"Failed to create branch or commit: {str(e)}"
+                error_msg = "Failed to create branch or commit: {}".format(str(e))
                 logger.error(error_msg)
                 issue.status = IssueStatus.NEW
                 db.add(Event(
@@ -202,24 +202,24 @@ class FixerService:
             
             # Step 4: Create pull request
             logger.info("Creating pull request...")
-            pr_title = f"[AI Fix] {issue.rule}: {issue.component}"
-            pr_body = f"""## AI-Generated Fix for SonarQube Issue
+            pr_title = "[AI Fix] {}: {}".format(issue.rule, issue.component)
+            pr_body = """## AI-Generated Fix for SonarQube Issue
 
-**Issue Key:** {issue.sonarqube_issue_key}
-**Rule:** {issue.rule}
-**Severity:** {issue.severity}
-**File:** {issue.component}
-**Line:** {issue.line or 'N/A'}
+**Issue Key:** {}
+**Rule:** {}
+**Severity:** {}
+**File:** {}
+**Line:** {}
 
 ### Issue Description
-{issue.message}
+{}
 
 ### AI Explanation
-{explanation}
+{}
 
 ---
 *This pull request was automatically generated by the SonarQube Code Janitor.*
-"""
+""".format(issue.sonarqube_issue_key, issue.rule, issue.severity, issue.component, issue.line or 'N/A', issue.message, explanation)
             
             try:
                 pr_url = github_client.create_pull_request(
@@ -236,19 +236,19 @@ class FixerService:
                 db.add(Event(
                     issue_id=issue.id,
                     event_type=EventType.PR_CREATED,
-                    message=f"Pull request created: {pr_url}",
+                    message="Pull request created: {}".format(pr_url),
                 ))
                 db.commit()
                 
-                logger.info(f"Successfully created PR: {pr_url}")
+                logger.info("Successfully created PR: {}".format(pr_url))
                 return {
                     "success": True,
-                    "message": f"Fix applied and PR created: {pr_url}",
+                    "message": "Fix applied and PR created: {}".format(pr_url),
                     "pr_url": pr_url,
                 }
                 
             except Exception as e:
-                error_msg = f"Failed to create pull request: {str(e)}"
+                error_msg = "Failed to create pull request: {}".format(str(e))
                 logger.error(error_msg)
                 issue.status = IssueStatus.NEW
                 db.add(Event(
@@ -260,9 +260,9 @@ class FixerService:
                 return {"success": False, "message": error_msg}
             
         except Exception as e:
-            logger.error(f"Unexpected error fixing issue: {e}")
+            logger.error("Unexpected error fixing issue: {}".format(e))
             db.rollback()
-            return {"success": False, "message": f"Unexpected error: {str(e)}"}
+            return {"success": False, "message": "Unexpected error: {}".format(str(e))}
 
 
 # Global service instance
