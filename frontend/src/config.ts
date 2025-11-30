@@ -2,9 +2,10 @@
  * Configuration for the frontend application.
  */
 
-// API base URL - uses proxy in development, direct URL in production
+// API base URL - uses proxy in development and production (nginx proxies /api to backend)
+// Empty string means relative URLs like "/api/issues" which nginx will proxy to backend
 export const API_BASE_URL = import.meta.env.PROD 
-  ? (import.meta.env.VITE_API_URL || 'http://localhost:8000')
+  ? (import.meta.env.VITE_API_URL !== undefined ? import.meta.env.VITE_API_URL : 'http://localhost:8000')
   : '';
 
 // Polling interval for activity feed (milliseconds)

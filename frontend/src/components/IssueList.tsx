@@ -15,6 +15,8 @@ export function IssueList() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [repoUrl, setRepoUrl] = useState<string>('');
+  const [showScanDialog, setShowScanDialog] = useState(false);
 
   const fetchIssues = async () => {
     try {
@@ -68,6 +70,74 @@ export function IssueList() {
     }
   };
 
+  const handleScanRepository = async (customRepoUrl?: string) => {
+    let repoOwner: string | undefined;
+    let repoName: string | undefined;
+
+    // Parse GitHub URL if provided
+    if (customRepoUrl) {
+      const match = customRepoUrl.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/);
+      if (!match) {
+        alert('Invalid GitHub URL. Format: https://github.com/owner/repo');
+        return;
+      }
+      repoOwner = match[1];
+      repoName = match[2].replace(/\.git$/, ''); // Remove .git suffix if present
+    }
+
+    const repoDisplay = customRepoUrl ? `${repoOwner}/${repoName}` : 'your configured repository';
+    if (!confirm(`This will scan ${repoDisplay} with SonarQube. It may take a few minutes. Continue?`)) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      setShowScanDialog(false);
+      const result = await apiClient.scanRepository(repoOwner, repoName);
+      alert(`${result.message}\n\nView results at: ${result.project_url || 'SonarQube dashboard'}`);
+      // After scanning, sync issues
+      await handleSyncIssues();
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setLoading(false);
+    }
+  };
+
+  const handleFixAll = async () => {
+    const newIssues = issues.filter(i => i.status === IssueStatus.NEW);
+    if (newIssues.length === 0) {
+      alert('No new issues to fix!');
+      return;
+    }
+
+    if (!confirm(`This will trigger AI fixes for ${newIssues.length} issues. This may take several minutes. Continue?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const issue of newIssues) {
+        try {
+          await apiClient.triggerFix(issue.id);
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to fix issue ${issue.id}:`, err);
+          errorCount++;
+        }
+      }
+
+      alert(`Fix All completed!\n\nSuccessful: ${successCount}\nFailed: ${errorCount}`);
+      await fetchIssues();
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusClass = (status: IssueStatus) => {
     return `status-badge status-${status.toLowerCase()}`;
   };
@@ -111,10 +181,17 @@ export function IssueList() {
             <option value="NEW">New</option>
             <option value="FIXING">Fixing</option>
             <option value="PR_OPEN">PR Open</option>
-            <option value="CI_PASSED">CI Passed</option>
-            <option value="CI_FAILED">CI Failed</option>
+            <option value="CI_PASSED">Merged</option>
+            <option value="CI_FAILED">Not Merged</option>
             <option value="CLOSED">Closed</option>
           </select>
+          <button 
+            className="button button-primary button-small"
+            onClick={() => setShowScanDialog(true)}
+            disabled={loading}
+          >
+            🔎 Scan Repository
+          </button>
           <button 
             className="button button-secondary button-small"
             onClick={handleSyncIssues}
@@ -122,8 +199,84 @@ export function IssueList() {
           >
             Sync from SonarQube
           </button>
+          {issues.filter((i: Issue) => i.status === IssueStatus.NEW).length > 0 && (
+            <button 
+              className="button button-primary button-small"
+              onClick={handleFixAll}
+              disabled={loading}
+              style={{ backgroundColor: '#10b981' }}
+            >
+              🤖 Fix All ({issues.filter((i: Issue) => i.status === IssueStatus.NEW).length})
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Scan Repository Dialog */}
+      {showScanDialog && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '8px',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <h3 style={{ marginTop: 0 }}>Scan Repository</h3>
+            <p style={{ fontSize: '0.875rem', color: '#666' }}>
+              Leave blank to scan your configured repository, or enter a GitHub URL to scan any public repository.
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#fffbeb', borderRadius: '4px', border: '1px solid #fef3c7' }}>
+              ⚠️ External repos: Read-only mode. You can view issues but cannot create PRs without write access.
+            </p>
+            <input
+              type="text"
+              placeholder="https://github.com/owner/repo (optional)"
+              value={repoUrl}
+              onChange={(e) => setRepoUrl(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #ddd',
+                marginBottom: '1rem',
+                fontSize: '0.875rem'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button
+                className="button button-secondary"
+                onClick={() => {
+                  setShowScanDialog(false);
+                  setRepoUrl('');
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="button button-primary"
+                onClick={() => {
+                  handleScanRepository(repoUrl || undefined);
+                  setRepoUrl('');
+                }}
+              >
+                Scan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {issues.length === 0 ? (
         <div className="empty-state">

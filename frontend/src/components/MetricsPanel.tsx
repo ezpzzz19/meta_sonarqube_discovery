@@ -68,7 +68,7 @@ export function MetricsPanel() {
       
       <div className="metric-card">
         <div className="metric-value">{metrics.ci_passed_issues}</div>
-        <div className="metric-label">CI Passed</div>
+        <div className="metric-label">Merged</div>
       </div>
       
       <div className="metric-card">

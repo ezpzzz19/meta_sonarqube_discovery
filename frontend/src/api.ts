@@ -83,6 +83,18 @@ class ApiClient {
       method: 'POST',
     });
   }
+
+  // Scan
+  async scanRepository(repoOwner?: string, repoName?: string): Promise<{ success: boolean; message: string; project_url?: string }> {
+    const body: any = {};
+    if (repoOwner) body.repo_owner = repoOwner;
+    if (repoName) body.repo_name = repoName;
+
+    return this.request('/api/scan', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
