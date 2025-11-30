@@ -1,3 +1,4 @@
+yaml
 version: '3.8'
 
 services:
@@ -8,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: sonarqube_codex
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -30,7 +31,7 @@ services:
     environment:
       SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/sonarqube
       SONAR_JDBC_USERNAME: postgres
-      SONAR_JDBC_PASSWORD: postgres
+      SONAR_JDBC_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "9000:9000"
     volumes:
@@ -60,7 +61,7 @@ services:
         condition: service_healthy
     environment:
       # Database
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sonarqube_codex
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/sonarqube_codex
       
       # SonarQube (REQUIRED - Set these in .env file)
       SONARQUBE_URL: ${SONARQUBE_URL}
