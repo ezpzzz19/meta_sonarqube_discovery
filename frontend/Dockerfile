@@ -1,4 +1,5 @@
-FROM node:18-alpine as build
+Dockerfile
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
