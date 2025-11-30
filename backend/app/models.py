@@ -47,6 +47,7 @@ class Issue(Base):
     status = Column(SQLEnum(IssueStatus), nullable=False, default=IssueStatus.NEW, index=True)
     pr_url = Column(String(500), nullable=True)
     pr_branch = Column(String(255), nullable=True)
+    pr_merged = Column(Integer, default=0, nullable=False)  # 0=not merged, 1=merged, -1=unknown/no PR
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     

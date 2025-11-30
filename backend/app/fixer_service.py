@@ -263,6 +263,65 @@ class FixerService:
             logger.error("Unexpected error fixing issue: {}".format(e))
             db.rollback()
             return {"success": False, "message": "Unexpected error: {}".format(str(e))}
+    
+    async def update_pr_merge_status(self, db: Session) -> int:
+        """
+        Check and update merge status for all issues with PRs.
+        
+        Args:
+            db: Database session
+            
+        Returns:
+            Number of issues updated
+        """
+        logger.info("Updating PR merge status...")
+        
+        try:
+            # Get all issues with PRs that haven't been confirmed as merged
+            issues_with_prs = db.query(Issue).filter(
+                Issue.pr_url.isnot(None),
+                Issue.pr_merged != 1  # Not yet confirmed as merged
+            ).all()
+            
+            updated_count = 0
+            
+            for issue in issues_with_prs:
+                try:
+                    # Check PR status from GitHub
+                    pr_info = await github_client.get_pr_status(issue.pr_url)
+                    
+                    if pr_info and pr_info.get("merged"):
+                        # PR was merged!
+                        issue.pr_merged = 1
+                        issue.status = IssueStatus.CLOSED  # Mark as closed since it's merged
+                        
+                        # Create event
+                        event = Event(
+                            issue_id=issue.id,
+                            event_type=EventType.STATUS_UPDATED,
+                            message=f"PR merged successfully: {issue.pr_url}",
+                        )
+                        db.add(event)
+                        updated_count += 1
+                        logger.info(f"Issue {issue.sonarqube_issue_key} PR was merged")
+                    
+                    elif issue.status == IssueStatus.CLOSED and issue.pr_merged == 0:
+                        # Issue is closed but PR not merged = rejected
+                        # pr_merged stays 0 (not merged)
+                        logger.info(f"Issue {issue.sonarqube_issue_key} was closed without merge")
+                
+                except Exception as e:
+                    logger.warning(f"Error checking PR status for {issue.pr_url}: {e}")
+                    continue
+            
+            db.commit()
+            logger.info(f"Updated {updated_count} PR merge statuses")
+            return updated_count
+            
+        except Exception as e:
+            logger.error(f"Error updating PR merge status: {e}")
+            db.rollback()
+            return 0
 
 
 # Global service instance

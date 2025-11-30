@@ -42,7 +42,8 @@ async def start_background_poller():
     """
     Background task that periodically:
     1. Syncs issues from SonarQube
-    2. Attempts to fix NEW issues if auto_fix is enabled
+    2. Checks PR merge status for open PRs
+    3. Attempts to fix NEW issues if auto_fix is enabled
     """
     logger.info("Background poller started")
 

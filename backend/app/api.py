@@ -1,7 +1,8 @@
 """
 FastAPI routes for the API.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from uuid import UUID
@@ -21,6 +22,12 @@ from app.schemas import (
 from app.fixer_service import fixer_service
 
 router = APIRouter()
+
+
+class ScanRequest(BaseModel):
+    """Request body for scanning a repository."""
+    repo_owner: Optional[str] = None
+    repo_name: Optional[str] = None
 
 
 @router.get("/issues", response_model=IssueListResponse)
@@ -143,9 +150,14 @@ async def get_metrics_summary(
     # Count total PRs created
     total_prs_created = db.query(Issue).filter(Issue.pr_url.isnot(None)).count()
     
-    # Calculate success rate (CI passed / total PRs with CI results)
-    total_with_ci = ci_passed_issues + ci_failed_issues
-    success_rate = (ci_passed_issues / total_with_ci * 100) if total_with_ci > 0 else 0.0
+    # Count merged PRs (the true success metric)
+    merged_prs = db.query(Issue).filter(Issue.pr_merged == 1).count()
+    
+    # Calculate success rate based on PR merge status
+    # Success = PR merged (pr_merged == 1)
+    # Failure = PR created but not merged (pr_merged == 0)
+    # Each PR attempt is counted individually
+    success_rate = (merged_prs / total_prs_created * 100) if total_prs_created > 0 else 0.0
     
     return MetricsSummary(
         total_issues=total_issues,
@@ -176,3 +188,42 @@ async def sync_issues(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to sync issues: {str(e)}")
+
+
+@router.post("/scan")
+async def scan_repository(
+    request: ScanRequest = Body(default=None),
+):
+    """
+    Run SonarQube analysis on a repository.
+    If repo_owner and repo_name are provided in the request body, scan that repository.
+    Otherwise, use the configured repository from environment variables.
+    """
+    from app.scanner_service import scanner_service
+    
+    repo_owner = None
+    repo_name = None
+    
+    if request:
+        repo_owner = request.repo_owner
+        repo_name = request.repo_name
+    
+    try:
+        result = scanner_service.scan_repository(
+            repo_owner=repo_owner,
+            repo_name=repo_name
+        )
+        
+        if result["success"]:
+            return {
+                "success": True,
+                "message": result["message"],
+                "project_url": result.get("project_url"),
+            }
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=result.get("message", "Scan failed")
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to run scan: {str(e)}")
