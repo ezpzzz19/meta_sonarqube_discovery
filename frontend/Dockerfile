@@ -11,8 +11,8 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Build argument for API URL
-ARG VITE_API_URL=http://localhost:8000
+# Build argument for API URL (empty means use relative URLs, which nginx will proxy)
+ARG VITE_API_URL=""
 
 # Build the application with the API URL baked in
 RUN VITE_API_URL=${VITE_API_URL} npm run build

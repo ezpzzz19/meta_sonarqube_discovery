@@ -305,10 +305,20 @@ class FixerService:
                         updated_count += 1
                         logger.info(f"Issue {issue.sonarqube_issue_key} PR was merged")
                     
-                    elif issue.status == IssueStatus.CLOSED and issue.pr_merged == 0:
-                        # Issue is closed but PR not merged = rejected
-                        # pr_merged stays 0 (not merged)
-                        logger.info(f"Issue {issue.sonarqube_issue_key} was closed without merge")
+                    elif pr_info and pr_info.get("state") == "closed" and not pr_info.get("merged"):
+                        # PR was closed but NOT merged = rejected
+                        issue.pr_merged = 0
+                        issue.status = IssueStatus.CLOSED
+                        
+                        # Create event
+                        event = Event(
+                            issue_id=issue.id,
+                            event_type=EventType.STATUS_UPDATED,
+                            message=f"PR closed without merge (rejected): {issue.pr_url}",
+                        )
+                        db.add(event)
+                        updated_count += 1
+                        logger.info(f"Issue {issue.sonarqube_issue_key} PR was closed without merge")
                 
                 except Exception as e:
                     logger.warning(f"Error checking PR status for {issue.pr_url}: {e}")

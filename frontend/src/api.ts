@@ -95,6 +95,13 @@ class ApiClient {
       body: JSON.stringify(body),
     });
   }
+
+  // Refresh PR Status
+  async refreshPRStatus(): Promise<{ success: boolean; message: string; updated_count: number }> {
+    return this.request('/api/refresh-pr-status', {
+      method: 'POST',
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

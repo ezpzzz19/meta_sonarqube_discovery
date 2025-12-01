@@ -17,6 +17,7 @@ export function IssueList() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [repoUrl, setRepoUrl] = useState<string>('');
   const [showScanDialog, setShowScanDialog] = useState(false);
+  const [refreshingPRStatus, setRefreshingPRStatus] = useState(false);
 
   const fetchIssues = async () => {
     try {
@@ -67,6 +68,19 @@ export function IssueList() {
       alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshPRStatus = async () => {
+    try {
+      setRefreshingPRStatus(true);
+      const result = await apiClient.refreshPRStatus();
+      alert(result.message);
+      await fetchIssues();
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setRefreshingPRStatus(false);
     }
   };
 
@@ -199,6 +213,14 @@ export function IssueList() {
           >
             Sync from SonarQube
           </button>
+          <button 
+            className="button button-secondary button-small"
+            onClick={handleRefreshPRStatus}
+            disabled={refreshingPRStatus}
+            style={{ backgroundColor: '#3b82f6' }}
+          >
+            {refreshingPRStatus ? 'Refreshing...' : '🔄 Refresh PR Status'}
+          </button>
           {issues.filter((i: Issue) => i.status === IssueStatus.NEW).length > 0 && (
             <button 
               className="button button-primary button-small"
@@ -296,6 +318,7 @@ export function IssueList() {
                   <th>Line</th>
                   <th>Status</th>
                   <th>PR</th>
+                  <th>PR Merged</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -325,6 +348,34 @@ export function IssueList() {
                         <a href={issue.pr_url} target="_blank" rel="noopener noreferrer">
                           View PR
                         </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td>
+                      {issue.pr_url ? (
+                        issue.pr_merged === 1 ? (
+                          <span style={{ 
+                            backgroundColor: '#10b981', 
+                            color: 'white', 
+                            padding: '0.25rem 0.5rem', 
+                            borderRadius: '4px', 
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold'
+                          }}>
+                            ✓ MERGED
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            backgroundColor: '#6b7280', 
+                            color: 'white', 
+                            padding: '0.25rem 0.5rem', 
+                            borderRadius: '4px', 
+                            fontSize: '0.75rem'
+                          }}>
+                            OPEN
+                          </span>
+                        )
                       ) : (
                         '-'
                       )}

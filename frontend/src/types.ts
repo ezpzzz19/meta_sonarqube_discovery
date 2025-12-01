@@ -33,6 +33,7 @@ export interface Issue {
   status: IssueStatus;
   pr_url: string | null;
   pr_branch: string | null;
+  pr_merged: number; // 0=not merged, 1=merged, -1=unknown/no PR
   created_at: string;
   updated_at: string;
 }
@@ -67,6 +68,8 @@ export interface MetricsSummary {
   ci_failed_issues: number;
   closed_issues: number;
   total_prs_created: number;
+  merged_prs: number;
+  rejected_prs: number;
   success_rate: number;
 }
 

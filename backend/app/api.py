@@ -153,11 +153,14 @@ async def get_metrics_summary(
     # Count merged PRs (the true success metric)
     merged_prs = db.query(Issue).filter(Issue.pr_merged == 1).count()
     
-    # Calculate success rate based on PR merge status
+    # Calculate success rate: Merged / (Merged + All Closed Issues)
     # Success = PR merged (pr_merged == 1)
-    # Failure = PR created but not merged (pr_merged == 0)
-    # Each PR attempt is counted individually
-    success_rate = (merged_prs / total_prs_created * 100) if total_prs_created > 0 else 0.0
+    # Failure = Any closed issue (status == CLOSED), regardless of pr_merged
+    # Open PRs are NOT counted in the rate yet (still pending)
+    # Note: closed_issues already contains all issues with status=CLOSED
+    
+    completed_prs = merged_prs + closed_issues
+    success_rate = (merged_prs / completed_prs * 100) if completed_prs > 0 else 0.0
     
     return MetricsSummary(
         total_issues=total_issues,
@@ -168,6 +171,8 @@ async def get_metrics_summary(
         ci_failed_issues=ci_failed_issues,
         closed_issues=closed_issues,
         total_prs_created=total_prs_created,
+        merged_prs=merged_prs,
+        rejected_prs=closed_issues,
         success_rate=round(success_rate, 2),
     )
 
@@ -227,3 +232,21 @@ async def scan_repository(
             )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to run scan: {str(e)}")
+
+
+@router.post("/refresh-pr-status")
+async def refresh_pr_status(
+    db: Session = Depends(get_db),
+):
+    """
+    Manually trigger a refresh of PR merge status for all issues with open PRs.
+    """
+    try:
+        updated_count = await fixer_service.update_pr_merge_status(db)
+        return {
+            "success": True,
+            "message": f"Updated {updated_count} PR statuses",
+            "updated_count": updated_count,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to refresh PR status: {str(e)}")

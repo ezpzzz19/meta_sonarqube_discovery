@@ -58,27 +58,39 @@ export function MetricsPanel() {
       
       <div className="metric-card">
         <div className="metric-value">{metrics.new_issues}</div>
-        <div className="metric-label">New</div>
+        <div className="metric-label">New Issues</div>
       </div>
       
-      <div className="metric-card">
-        <div className="metric-value">{metrics.pr_open_issues}</div>
-        <div className="metric-label">PR Open</div>
+      <div className="metric-card" style={{ backgroundColor: '#f59e0b20', borderLeft: '4px solid #f59e0b' }}>
+        <div className="metric-value" style={{ color: '#f59e0b' }}>{metrics.pr_open_issues}</div>
+        <div className="metric-label">Open PRs</div>
+        <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '0.25rem' }}>
+          (Pending Review)
+        </div>
+      </div>
+
+      <div className="metric-card" style={{ backgroundColor: '#10b98120', borderLeft: '4px solid #10b981' }}>
+        <div className="metric-value" style={{ color: '#10b981' }}>{metrics.merged_prs}</div>
+        <div className="metric-label">Merged PRs</div>
+        <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '0.25rem' }}>
+          (Success ✓)
+        </div>
       </div>
       
-      <div className="metric-card">
-        <div className="metric-value">{metrics.ci_passed_issues}</div>
-        <div className="metric-label">Merged</div>
+      <div className="metric-card" style={{ backgroundColor: '#ef444420', borderLeft: '4px solid #ef4444' }}>
+        <div className="metric-value" style={{ color: '#ef4444' }}>{metrics.rejected_prs}</div>
+        <div className="metric-label">Rejected PRs</div>
+        <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '0.25rem' }}>
+          (Closed/Not Merged)
+        </div>
       </div>
       
-      <div className="metric-card">
-        <div className="metric-value">{metrics.total_prs_created}</div>
-        <div className="metric-label">Total PRs</div>
-      </div>
-      
-      <div className="metric-card">
-        <div className="metric-value">{metrics.success_rate}%</div>
+      <div className="metric-card" style={{ backgroundColor: '#3b82f620' }}>
+        <div className="metric-value" style={{ color: '#3b82f6' }}>{metrics.success_rate}%</div>
         <div className="metric-label">Success Rate</div>
+        <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '0.25rem' }}>
+          (Merged / Completed)
+        </div>
       </div>
     </div>
   );

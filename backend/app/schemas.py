@@ -40,6 +40,7 @@ class IssueResponse(IssueBase):
     status: IssueStatus
     pr_url: Optional[str] = None
     pr_branch: Optional[str] = None
+    pr_merged: int = 0
     created_at: datetime
     updated_at: datetime
     
@@ -106,7 +107,9 @@ class MetricsSummary(BaseModel):
     ci_failed_issues: int
     closed_issues: int
     total_prs_created: int
-    success_rate: float = Field(description="Percentage of issues that passed CI")
+    merged_prs: int
+    rejected_prs: int
+    success_rate: float = Field(description="Percentage of PRs that were merged")
 
 
 class TriggerFixResponse(BaseModel):
