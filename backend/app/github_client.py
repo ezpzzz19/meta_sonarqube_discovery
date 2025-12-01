@@ -157,17 +157,24 @@ class GitHubClient:
         except GithubException as e:
             raise Exception(f"Failed to create pull request: {e}")
     
-    def get_pr_status(self, pr_number: int) -> dict:
+    def get_pr_status(self, pr_identifier) -> dict:
         """
         Get the status of a pull request.
         
         Args:
-            pr_number: Pull request number
+            pr_identifier: Pull request number (int) or PR URL (str)
             
         Returns:
             Dict with PR status information
         """
         try:
+            # Extract PR number from URL if a string is provided
+            if isinstance(pr_identifier, str):
+                # URL format: https://github.com/owner/repo/pull/123
+                pr_number = int(pr_identifier.rstrip('/').split('/')[-1])
+            else:
+                pr_number = pr_identifier
+            
             pr = self.repo.get_pull(pr_number)
             
             # Get commit statuses

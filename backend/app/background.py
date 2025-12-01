@@ -38,6 +38,11 @@ async def fix_issues():
             # Small delay between fixes to avoid rate limiting
             await asyncio.sleep(5)
 
+async def update_pr_statuses():
+    with get_db_context() as db:
+        updated_count = await fixer_service.update_pr_merge_status(db)
+        logger.info(f"Updated {updated_count} PR merge statuses")
+
 async def start_background_poller():
     """
     Background task that periodically:
@@ -53,6 +58,9 @@ async def start_background_poller():
 
             # Sync issues from SonarQube
             await sync_issues()
+
+            # Check PR merge status
+            await update_pr_statuses()
 
             # If auto-fix is enabled, attempt to fix NEW issues
             if settings.auto_fix:

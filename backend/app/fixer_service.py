@@ -288,7 +288,7 @@ class FixerService:
             for issue in issues_with_prs:
                 try:
                     # Check PR status from GitHub
-                    pr_info = await github_client.get_pr_status(issue.pr_url)
+                    pr_info = github_client.get_pr_status(issue.pr_url)
                     
                     if pr_info and pr_info.get("merged"):
                         # PR was merged!
