@@ -59,7 +59,7 @@ class GitHubClient:
             return content, contents.sha
             
         except GithubException as e:
-            raise Exception(f"Failed to fetch file {file_path}: {e}")
+            raise GithubException(f"Failed to fetch file {file_path}: {e}")
     
     def create_branch(self, branch_name: str, from_branch: Optional[str] = None) -> str:
         """
@@ -123,7 +123,7 @@ class GitHubClient:
             )
             return result["commit"].sha
         except GithubException as e:
-            raise Exception(f"Failed to update file {file_path}: {e}")
+            raise GithubException(f"Failed to update file {file_path}: {e}")
     
     def create_pull_request(
         self,
@@ -155,7 +155,7 @@ class GitHubClient:
             )
             return pr.html_url
         except GithubException as e:
-            raise Exception(f"Failed to create pull request: {e}")
+            raise GithubException(f"Failed to create pull request: {e}")
     
     def get_pr_status(self, pr_identifier) -> dict:
         """
@@ -199,7 +199,7 @@ class GitHubClient:
                 ],
             }
         except GithubException as e:
-            raise Exception(f"Failed to get PR status: {e}")
+            raise GithubException(f"Failed to get PR status: {e}")
 
 
 # Global client instance
