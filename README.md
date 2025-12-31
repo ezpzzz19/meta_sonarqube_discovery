@@ -6,4 +6,4 @@ There is still a lot more to explore and integrate...
 
 url: https://codequalityjanitor.com
 
-^ currently this link is down due
+^ currently this link is down due to on going refactor to optimize cloud costs
